@@ -1,0 +1,77 @@
+[Unit]
+Description=Uptime Kuma Webhook Service (Production)
+Documentation=https://github.com/yourusername/uptime-kuma-webhook
+After=network-online.target
+Wants=network-online.target
+# Start after rsyslog if on same machine
+After=rsyslog.service
+
+[Service]
+Type=simple
+User=webhook
+Group=webhook
+WorkingDirectory=/opt/uptime-kuma-webhook
+
+# Production environment variables
+Environment="WEBHOOK_PORT=8080"
+Environment="METRICS_PORT=9090"
+Environment="LOG_FILE=/srv/uptime-kuma/webhook.log"
+Environment="LOG_DIR=/srv/uptime-kuma"
+Environment="MAX_LOG_SIZE=104857600"        # 100MB
+Environment="BUFFER_SIZE=10000"             # 10K events in buffer
+Environment="FLUSH_INTERVAL=1s"             # Flush every 1 second
+Environment="MAX_CONCURRENT_WRITES=4"        # 4 concurrent writers
+Environment="RATE_LIMIT_PER_SECOND=10000"   # 10K req/s
+Environment="RATE_LIMIT_BURST=20000"        # 20K burst
+Environment="READ_TIMEOUT=5s"
+Environment="WRITE_TIMEOUT=10s"
+Environment="IDLE_TIMEOUT=120s"
+Environment="SHUTDOWN_TIMEOUT=30s"
+Environment="MAX_REQUEST_BODY_SIZE=1048576" # 1MB
+Environment="ENABLE_METRICS=true"
+Environment="GOMAXPROCS=4"                  # Limit CPU cores
+
+# Binary
+ExecStart=/opt/uptime-kuma-webhook/uptime-kuma-webhook
+
+# Restart policy - always restart on failure
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+# Resource limits for production
+LimitNOFILE=65536              # File descriptors
+LimitNPROC=4096                # Processes
+LimitMEMLOCK=64M               # Memory lock
+MemoryMax=2G                   # Maximum memory
+CPUQuota=400%                  # Max 4 CPU cores
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/uptime-kuma
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+PrivateDevices=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=uptime-kuma-webhook
+SyslogLevel=info
+
+# Health check (systemd 250+)
+# Uncomment if your systemd version supports it
+# Type=notify
+# WatchdogSec=30s
+
+[Install]
+WantedBy=multi-user.target
