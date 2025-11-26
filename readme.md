@@ -2,51 +2,7 @@
 
 A production‑grade Go webhook service that receives Uptime Kuma notifications, writes structured JSON logs to disk, and forwards them via rsyslog to Wazuh for centralized monitoring and alerting.
 
-┌─────────────────────────────────────────────────────────────────┐
-│                    Uptime Kuma Instances                        │
-│         (Multiple monitors: DNS, Ping, HTTP, etc.)              │
-└────────────────┬────────────────────────────────────────────────┘
-                 │ HTTP Webhooks (with retry)
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              Load Balancer (HAProxy/Nginx) [Optional]           │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│          Go Webhook Service (Multiple Instances)                │
-│  • Connection pooling    • Rate limiting                        │
-│  • Buffering            • Circuit breaker                       │
-│  • Metrics/Monitoring   • Health checks                         │
-└────────────────┬────────────────────────────────────────────────┘
-                 │ Write to buffer
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               Buffered File Writer (Async)                      │
-│  • Batch writes         • Compression                           │
-│  • Ring buffer          • Size-based rotation                   │
-└────────────────┬────────────────────────────────────────────────┘
-                 │ Append to file
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│         /srv/uptime-kuma/webhook.log                            │
-│         (Optimized rsyslog monitoring)                          │
-└────────────────┬────────────────────────────────────────────────┘
-                 │ Read via imfile (with state)
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│           Rsyslog (High-Performance Config)                     │
-│  • Batch processing     • Queue management                      │
-│  • Compression          • Rate limiting                         │
-└────────────────┬────────────────────────────────────────────────┘
-                 │ Forward (TCP with compression)
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              Wazuh Manager (Centralized SIEM)                   │
-│  • Custom decoders      • Alerting rules                        │
-│  • Analytics            • Dashboards                            │
-└─────────────────────────────────────────────────────────────────┘
-
+![architecture](./webhook/images/architecture.png)
 ## Features
 
 - Accepts Uptime Kuma webhook notifications (DNS, ping, HTTP, etc.).
